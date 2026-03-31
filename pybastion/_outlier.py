@@ -5,6 +5,7 @@ Translates from R: sampleOutlier, init_Outlier, fit_Outlier (Outlier.R)
 """
 
 import numpy as np
+
 from ._evol_params import t_initEvolZeta_ps, t_sampleEvolZeta_ps
 
 __all__ = [
@@ -39,7 +40,7 @@ def sampleOutlier(data, obs_sigma_t2, evol_sigma_t2, Td, rng=None):
 
     linht = data / obs_sigma_t2
     postSD = 1.0 / np.sqrt(1.0 / obs_sigma_t2 + 1.0 / evol_sigma_t2)
-    postMean = linht * postSD ** 2
+    postMean = linht * postSD**2
     return rng.normal(loc=postMean, scale=postSD)
 
 
@@ -72,9 +73,7 @@ def init_Outlier(data, obserror, rng=None):
         rng=rng,
     )
 
-    s_evolParams = t_initEvolZeta_ps(
-        zeta_5T / obserror["sigma_et"][4:], Td, rng=rng
-    )
+    s_evolParams = t_initEvolZeta_ps(zeta_5T / obserror["sigma_et"][4:], Td, rng=rng)
     n_squared_sum = np.sum((zeta_5T / s_evolParams["sigma_wt"]) ** 2)
     s_mu = np.concatenate([np.zeros(4), zeta_5T])
 
@@ -112,7 +111,7 @@ def fit_Outlier(data, zParam, obserror, rng=None):
     zeta_5T = sampleOutlier(
         data[4:],
         obs_sigma_t2=obserror["sigma_et"][4:] ** 2,
-        evol_sigma_t2=obs_sigma_e ** 2 * zParam["s_evolParams"]["sigma_wt"] ** 2,
+        evol_sigma_t2=obs_sigma_e**2 * zParam["s_evolParams"]["sigma_wt"] ** 2,
         Td=Td,
         rng=rng,
     )

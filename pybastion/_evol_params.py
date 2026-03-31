@@ -12,6 +12,7 @@ Translates from R:
 
 import numpy as np
 from scipy.stats import median_abs_deviation, norm
+
 from ._utils import rinvgamma
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
 # ──────────────────────────────────────────────────────────────────────────────
 # Evol0: initial-value variance parameters (half-Cauchy / parameter expansion)
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def dsp_initEvol0(mu0, commonSD=True):
     """Initialize evolution parameters for initial values."""
@@ -66,9 +68,9 @@ def dsp_sampleEvol0(mu0, evolParams0, commonSD=False, A=1.0, rng=None):
     p = len(mu0)
 
     # Numerical stability offset
-    mu02_small = np.any(mu0 ** 2 < 1e-16)
+    mu02_small = np.any(mu0**2 < 1e-16)
     offset = mu02_small * max(1e-8, median_abs_deviation(mu0, scale=1.0) / 1e6)
-    mu02 = mu0 ** 2 + offset
+    mu02 = mu0**2 + offset
 
     if commonSD:
         shape = p / 2 + 0.5
@@ -77,19 +79,17 @@ def dsp_sampleEvol0(mu0, evolParams0, commonSD=False, A=1.0, rng=None):
             p, 1.0 / np.sqrt(rng.gamma(shape, 1.0 / rate))
         )
         shape_px = 0.5 + 0.5
-        rate_px = 1.0 / evolParams0["sigma_w0"][0] ** 2 + 1.0 / A ** 2
-        evolParams0["px_sigma_w0"] = np.full(
-            p, rng.gamma(shape_px, 1.0 / rate_px)
-        )
+        rate_px = 1.0 / evolParams0["sigma_w0"][0] ** 2 + 1.0 / A**2
+        evolParams0["px_sigma_w0"] = np.full(p, rng.gamma(shape_px, 1.0 / rate_px))
     else:
         # Distinct standard deviations
         shape = 0.5 + 0.5
         rate = mu02 / 2 + evolParams0["px_sigma_w0"]
-        evolParams0["sigma_w0"] = 1.0 / np.sqrt(
-            rng.gamma(shape, 1.0 / rate, size=p)
-        )
+        evolParams0["sigma_w0"] = 1.0 / np.sqrt(rng.gamma(shape, 1.0 / rate, size=p))
         # Distinct parameter expansion
-        rate_px = 1.0 / evolParams0["sigma_w0"] ** 2 + 1.0 / evolParams0["sigma_00"] ** 2
+        rate_px = (
+            1.0 / evolParams0["sigma_w0"] ** 2 + 1.0 / evolParams0["sigma_00"] ** 2
+        )
         evolParams0["px_sigma_w0"] = rng.gamma(0.5 + 0.5, 1.0 / rate_px, size=p)
 
         # Global standard deviation
@@ -98,7 +98,7 @@ def dsp_sampleEvol0(mu0, evolParams0, commonSD=False, A=1.0, rng=None):
         evolParams0["sigma_00"] = 1.0 / np.sqrt(rng.gamma(shape_g, 1.0 / rate_g))
 
         # Global parameter expansion
-        rate_g_px = 1.0 / evolParams0["sigma_00"] ** 2 + 1.0 / A ** 2
+        rate_g_px = 1.0 / evolParams0["sigma_00"] ** 2 + 1.0 / A**2
         evolParams0["px_sigma_00"] = rng.gamma(0.5 + 0.5, 1.0 / rate_g_px)
 
     return evolParams0
@@ -108,6 +108,7 @@ def dsp_sampleEvol0(mu0, evolParams0, commonSD=False, A=1.0, rng=None):
 # Horseshoe (HS) evolution parameters for trend / seasonality
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def dsp_initEvolParams(omega, evol_error="HS"):
     """Initialize evolution error parameters (Horseshoe)."""
     omega = np.atleast_2d(np.asarray(omega, dtype=np.float64))
@@ -116,7 +117,7 @@ def dsp_initEvolParams(omega, evol_error="HS"):
     n, p = omega.shape
 
     if evol_error == "HS":
-        tauLambdaj = 1.0 / (omega ** 2 + 1e-300)
+        tauLambdaj = 1.0 / (omega**2 + 1e-300)
         xiLambdaj = 1.0 / (2.0 * tauLambdaj)
         tauLambda = 1.0 / (2.0 * np.mean(xiLambdaj, axis=0))
         xiLambda = 1.0 / (tauLambda + 1.0)
@@ -150,9 +151,9 @@ def dsp_sampleEvolParams(omega, evolParams, sigma_e=1.0, evol_error="HS", rng=No
         hsOffset = np.zeros_like(omega)
         for j in range(p):
             col = omega[:, j]
-            if np.any(col ** 2 < 1e-16):
+            if np.any(col**2 < 1e-16):
                 hsOffset[:, j] = max(1e-8, median_abs_deviation(col, scale=1.0) / 1e6)
-        hsInput2 = omega ** 2 + hsOffset
+        hsInput2 = omega**2 + hsOffset
 
         # Local scale parameters
         evolParams["tauLambdaj"] = rng.gamma(
@@ -169,7 +170,9 @@ def dsp_sampleEvolParams(omega, evolParams, sigma_e=1.0, evol_error="HS", rng=No
             shape = 0.5 + n / 2
             rate = np.sum(evolParams["xiLambdaj"][:, j]) + evolParams["xiLambda"][j]
             evolParams["tauLambda"][j] = rng.gamma(shape, 1.0 / rate)
-            evolParams["xiLambda"][j] = rng.gamma(1.0, 1.0 / (evolParams["tauLambda"][j] + 1.0))
+            evolParams["xiLambda"][j] = rng.gamma(
+                1.0, 1.0 / (evolParams["tauLambda"][j] + 1.0)
+            )
 
         evolParams["sigma_wt"] = (1.0 / np.sqrt(evolParams["tauLambdaj"])).ravel()
         return evolParams
@@ -178,7 +181,7 @@ def dsp_sampleEvolParams(omega, evolParams, sigma_e=1.0, evol_error="HS", rng=No
         for j in range(p):
             col = omega[:, j]
             shape = n / 2 + 0.01
-            rate = np.sum(col ** 2) / 2 + 0.01
+            rate = np.sum(col**2) / 2 + 0.01
             sd_j = 1.0 / np.sqrt(rng.gamma(shape, 1.0 / rate))
             evolParams["sigma_wt"] = np.full(n, sd_j)
         return evolParams
@@ -191,6 +194,7 @@ def dsp_sampleEvolParams(omega, evolParams, sigma_e=1.0, evol_error="HS", rng=No
 # Sparse Horseshoe (regularized) for trend with sparsity
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def initEvolParams_HS_sparse(omega, Td, tau=None, rng=None):
     """Initialize regularized (sparse) horseshoe parameters."""
     if rng is None:
@@ -200,7 +204,7 @@ def initEvolParams_HS_sparse(omega, Td, tau=None, rng=None):
         tau = 1.0 / (1000 * Td)
     omega_norm = omega / tau
     x_lambda_t = np.full(Td, 100.0)
-    lambda_2 = rinvgamma(Td, 1.0, 1.0 / x_lambda_t + omega_norm ** 2 / 2, rng=rng)
+    lambda_2 = rinvgamma(Td, 1.0, 1.0 / x_lambda_t + omega_norm**2 / 2, rng=rng)
     sigma_wt = np.maximum(np.sqrt(lambda_2) * tau, 1e-8)
     return {"sigma_wt": sigma_wt, "tau": tau, "lambda_2": lambda_2}
 
@@ -214,7 +218,7 @@ def sampleEvolParams_HS_sparse(omega, Td, evolParams, rng=None):
     lambda_2 = evolParams["lambda_2"]
     omega_norm = omega / tau
     x_lambda_t = rinvgamma(Td, 1.0, 1.0 + 1.0 / lambda_2, rng=rng)
-    lambda_2 = rinvgamma(Td, 1.0, 1.0 / x_lambda_t + omega_norm ** 2 / 2, rng=rng)
+    lambda_2 = rinvgamma(Td, 1.0, 1.0 / x_lambda_t + omega_norm**2 / 2, rng=rng)
     sigma_wt = np.maximum(np.sqrt(lambda_2) * tau, 1e-8)
     return {"sigma_wt": sigma_wt, "tau": tau, "lambda_2": lambda_2}
 
@@ -222,6 +226,7 @@ def sampleEvolParams_HS_sparse(omega, Td, evolParams, rng=None):
 # ──────────────────────────────────────────────────────────────────────────────
 # Outlier evolution parameters (heavy-tailed / parameter-expanded horseshoe)
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def t_initEvolZeta_ps(zeta, Td, rng=None):
     """Initialize outlier evolution parameters (parameter-expanded)."""
@@ -246,7 +251,7 @@ def t_sampleEvolZeta_ps(zeta, Td, evolParams, rng=None):
     if rng is None:
         rng = np.random.default_rng()
     zeta = np.asarray(zeta, dtype=np.float64).ravel()
-    hsInput2 = zeta ** 2
+    hsInput2 = zeta**2
 
     evolParams["lambda_t2"] = rinvgamma(
         Td, 1.0, 1.0 / evolParams["v"] + hsInput2 / 2, rng=rng
@@ -257,9 +262,7 @@ def t_sampleEvolZeta_ps(zeta, Td, evolParams, rng=None):
     evolParams["tau_t2"] = rinvgamma(
         1, (Td + 1) / 2, 1.0 / evolParams["xi"] + np.sum(1.0 / evolParams["v"]), rng=rng
     )[0]
-    evolParams["xi"] = rinvgamma(
-        1, 1.0, 1.0 + 1.0 / evolParams["tau_t2"], rng=rng
-    )[0]
+    evolParams["xi"] = rinvgamma(1, 1.0, 1.0 + 1.0 / evolParams["tau_t2"], rng=rng)[0]
     evolParams["sigma_wt"] = np.maximum(np.sqrt(evolParams["lambda_t2"]), 1e-6)
     return evolParams
 
@@ -267,6 +270,7 @@ def t_sampleEvolZeta_ps(zeta, Td, evolParams, rng=None):
 # ──────────────────────────────────────────────────────────────────────────────
 # Stochastic Volatility (SV) model
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def dsp_initSV(omega, rng=None):
     """
@@ -279,11 +283,12 @@ def dsp_initSV(omega, rng=None):
     n = len(omega)
 
     # log-volatility
-    ht = np.log(omega ** 2 + 0.0001)
+    ht = np.log(omega**2 + 0.0001)
 
     # Simple AR(1) initialization
     try:
         from statsmodels.tsa.arima.model import ARIMA
+
         model = ARIMA(ht, order=(1, 0, 0))
         res = model.fit()
         intercept = res.params[0]
@@ -306,10 +311,10 @@ def dsp_initSV(omega, rng=None):
 def _sv_sample_one_step(omega_j, svParams_j, ht_j, rng):
     """
     Single-site Gibbs sampler for stochastic volatility.
-    
+
     Model: y_t = exp(h_t/2) * eps_t,  eps_t ~ N(0,1)
            h_t = mu + phi*(h_{t-1} - mu) + sigma*eta_t,  eta_t ~ N(0,1)
-    
+
     Uses Kim-Shephard-Chib (1998) mixture approximation.
     """
     n = len(omega_j)
@@ -321,20 +326,58 @@ def _sv_sample_one_step(omega_j, svParams_j, ht_j, rng):
 
     # ---- Sample h_t using mixture-of-normals approximation ----
     # log(y_t^2) = h_t + log(eps_t^2), where log(eps_t^2) ~ mixture of normals
-    y_star = np.log(omega_j ** 2 + 1e-8)
+    y_star = np.log(omega_j**2 + 1e-8)
 
     # 10-component mixture from Omori et al. (2007)
-    m_st = np.array([1.92677, 1.34744, 0.73504, 0.02266, -0.85173,
-                     -1.97278, -3.46788, -5.55246, -8.68384, -14.65000])
-    v_st2 = np.array([0.11265, 0.17788, 0.26768, 0.40611, 0.62699,
-                      0.98583, 1.57469, 2.54498, 4.16591, 7.33342])
-    q = np.array([0.00609, 0.04775, 0.13057, 0.20674, 0.22715,
-                  0.18842, 0.12047, 0.05591, 0.01575, 0.00115])
+    m_st = np.array(
+        [
+            1.92677,
+            1.34744,
+            0.73504,
+            0.02266,
+            -0.85173,
+            -1.97278,
+            -3.46788,
+            -5.55246,
+            -8.68384,
+            -14.65000,
+        ]
+    )
+    v_st2 = np.array(
+        [
+            0.11265,
+            0.17788,
+            0.26768,
+            0.40611,
+            0.62699,
+            0.98583,
+            1.57469,
+            2.54498,
+            4.16591,
+            7.33342,
+        ]
+    )
+    q = np.array(
+        [
+            0.00609,
+            0.04775,
+            0.13057,
+            0.20674,
+            0.22715,
+            0.18842,
+            0.12047,
+            0.05591,
+            0.01575,
+            0.00115,
+        ]
+    )
 
     # Sample mixture indicators
     residuals = y_star - ht_j
     log_probs = np.log(q[np.newaxis, :]) + norm.logpdf(
-        residuals[:, np.newaxis], loc=m_st[np.newaxis, :], scale=np.sqrt(v_st2[np.newaxis, :])
+        residuals[:, np.newaxis],
+        loc=m_st[np.newaxis, :],
+        scale=np.sqrt(v_st2[np.newaxis, :]),
     )
     # Normalize
     log_probs -= log_probs.max(axis=1, keepdims=True)
@@ -357,12 +400,12 @@ def _sv_sample_one_step(omega_j, svParams_j, ht_j, rng):
 
     # Initial state
     h_pred[0] = mu  # unconditional mean
-    P_pred[0] = sigma ** 2 / (1 - phi ** 2)
+    P_pred[0] = sigma**2 / (1 - phi**2)
 
     for t in range(n):
         if t > 0:
             h_pred[t] = mu + phi * (h_filt[t - 1] - mu)
-            P_pred[t] = phi ** 2 * P_filt[t - 1] + sigma ** 2
+            P_pred[t] = phi**2 * P_filt[t - 1] + sigma**2
 
         # Update
         K = P_pred[t] / (P_pred[t] + d_var[t])
@@ -375,9 +418,9 @@ def _sv_sample_one_step(omega_j, svParams_j, ht_j, rng):
 
     for t in range(n - 2, -1, -1):
         # Backward smoothing
-        J = P_filt[t] * phi / (phi ** 2 * P_filt[t] + sigma ** 2)
+        J = P_filt[t] * phi / (phi**2 * P_filt[t] + sigma**2)
         h_smooth = h_filt[t] + J * (ht_new[t + 1] - mu - phi * (h_filt[t] - mu))
-        P_smooth = P_filt[t] - J ** 2 * (phi ** 2 * P_filt[t] + sigma ** 2)
+        P_smooth = P_filt[t] - J**2 * (phi**2 * P_filt[t] + sigma**2)
         P_smooth = max(P_smooth, 1e-12)
         ht_new[t] = rng.normal(h_smooth, np.sqrt(P_smooth))
 
@@ -386,7 +429,7 @@ def _sv_sample_one_step(omega_j, svParams_j, ht_j, rng):
     eta = ht_new[1:] - mu - phi * (ht_new[:-1] - mu)
     # sigma^2 ~ InvGamma
     shape_s = (n - 1) / 2 + 0.01
-    rate_s = np.sum(eta ** 2) / 2 + 0.01
+    rate_s = np.sum(eta**2) / 2 + 0.01
     sigma_new = np.sqrt(rinvgamma(1, shape_s, rate_s, rng=rng)[0])
     sigma_new = max(sigma_new, 1e-6)
 
@@ -394,14 +437,16 @@ def _sv_sample_one_step(omega_j, svParams_j, ht_j, rng):
     hbar = ht_new[0] * (1 - phi) + np.sum(ht_new[1:] - phi * ht_new[:-1])
     # Prior: mu ~ N(0, 100)
     prior_var_mu = 100.0
-    post_var = 1.0 / ((1 - phi) ** 2 / sigma_new ** 2 * 1 +
-                       (n - 1) * (1 - phi) ** 2 / sigma_new ** 2 +
-                       1.0 / prior_var_mu)
+    post_var = 1.0 / (
+        (1 - phi) ** 2 / sigma_new**2 * 1
+        + (n - 1) * (1 - phi) ** 2 / sigma_new**2
+        + 1.0 / prior_var_mu
+    )
     # Actually more careful:
     numer = (1 - phi) * (ht_new[0] + np.sum(ht_new[1:] - phi * ht_new[:-1]))
-    denom = (n * (1 - phi) ** 2 / sigma_new ** 2 + 1.0 / prior_var_mu)
+    denom = n * (1 - phi) ** 2 / sigma_new**2 + 1.0 / prior_var_mu
     post_var_mu = 1.0 / denom
-    post_mean_mu = numer / sigma_new ** 2 * post_var_mu
+    post_mean_mu = numer / sigma_new**2 * post_var_mu
     mu_new = rng.normal(post_mean_mu, np.sqrt(max(post_var_mu, 1e-12)))
 
     # Sample phi | h, mu, sigma using griddy Gibbs or Metropolis
@@ -409,8 +454,12 @@ def _sv_sample_one_step(omega_j, svParams_j, ht_j, rng):
     phi_prop = phi + rng.normal(0, 0.05)
     if abs(phi_prop) < 0.999:
         # Log-likelihood ratio
-        ll_curr = -np.sum((ht_new[1:] - mu_new - phi * (ht_new[:-1] - mu_new)) ** 2) / (2 * sigma_new ** 2)
-        ll_prop = -np.sum((ht_new[1:] - mu_new - phi_prop * (ht_new[:-1] - mu_new)) ** 2) / (2 * sigma_new ** 2)
+        ll_curr = -np.sum((ht_new[1:] - mu_new - phi * (ht_new[:-1] - mu_new)) ** 2) / (
+            2 * sigma_new**2
+        )
+        ll_prop = -np.sum(
+            (ht_new[1:] - mu_new - phi_prop * (ht_new[:-1] - mu_new)) ** 2
+        ) / (2 * sigma_new**2)
         # Prior on phi: Beta((1+phi)/2; 20, 1.5) => favor phi near 1
         # Simple uniform prior
         log_alpha = ll_prop - ll_curr
@@ -450,12 +499,48 @@ def dsp_sampleSVparams(omega, svParams_dict, rng=None):
 # ──────────────────────────────────────────────────────────────────────────────
 
 # 10-component mixture from Omori, Chib, Shephard, Nakajima (2007)
-_M_ST = np.array([1.92677, 1.34744, 0.73504, 0.02266, -0.85173,
-                  -1.97278, -3.46788, -5.55246, -8.68384, -14.65000])
-_V_ST2 = np.array([0.11265, 0.17788, 0.26768, 0.40611, 0.62699,
-                   0.98583, 1.57469, 2.54498, 4.16591, 7.33342])
-_Q_MIX = np.array([0.00609, 0.04775, 0.13057, 0.20674, 0.22715,
-                   0.18842, 0.12047, 0.05591, 0.01575, 0.00115])
+_M_ST = np.array(
+    [
+        1.92677,
+        1.34744,
+        0.73504,
+        0.02266,
+        -0.85173,
+        -1.97278,
+        -3.46788,
+        -5.55246,
+        -8.68384,
+        -14.65000,
+    ]
+)
+_V_ST2 = np.array(
+    [
+        0.11265,
+        0.17788,
+        0.26768,
+        0.40611,
+        0.62699,
+        0.98583,
+        1.57469,
+        2.54498,
+        4.16591,
+        7.33342,
+    ]
+)
+_Q_MIX = np.array(
+    [
+        0.00609,
+        0.04775,
+        0.13057,
+        0.20674,
+        0.22715,
+        0.18842,
+        0.12047,
+        0.05591,
+        0.01575,
+        0.00115,
+    ]
+)
 
 
 def _ncind(y, mu, sig, q, rng):
@@ -536,10 +621,12 @@ def fit_paramsASV(data, sParams, D=2, rng=None):
     s_mu = sampleTrend(
         data - s_p_error_term["mean"],
         obs_sigma_t2=s_p_error_term["var"],
-        evol_sigma_t2=np.concatenate([
-            sParams["s_evolParams0"]["sigma_w0"] ** 2,
-            sParams["s_evolParams"]["sigma_wt"] ** 2,
-        ]),
+        evol_sigma_t2=np.concatenate(
+            [
+                sParams["s_evolParams0"]["sigma_w0"] ** 2,
+                sParams["s_evolParams"]["sigma_wt"] ** 2,
+            ]
+        ),
         D=D,
         Td=Td,
         rng=rng,
@@ -548,8 +635,11 @@ def fit_paramsASV(data, sParams, D=2, rng=None):
     s_mu0 = s_mu[:D]
     s_evolParams0 = dsp_sampleEvol0(s_mu0, sParams["s_evolParams0"], rng=rng)
     s_evolParams = dsp_sampleEvolParams(
-        omega=s_omega, evolParams=sParams["s_evolParams"],
-        sigma_e=1.0, evol_error="HS", rng=rng,
+        omega=s_omega,
+        evolParams=sParams["s_evolParams"],
+        sigma_e=1.0,
+        evol_error="HS",
+        rng=rng,
     )
 
     sParams["s_p_error_term"] = s_p_error_term

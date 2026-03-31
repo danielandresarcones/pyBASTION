@@ -44,12 +44,12 @@ dependencies = [
 
 [project.optional-dependencies]
 fast = ["scikit-sparse"]
-dev = ["pytest", "pyreadr", "matplotlib"]
+dev = ["pytest", "pyreadr", "matplotlib", "black", "isort", "pre-commit"]
 
 [project.urls]
-Homepage = "https://github.com/jasonbcho/pybastion"
-Repository = "https://github.com/jasonbcho/pybastion"
-Issues = "https://github.com/jasonbcho/pybastion/issues"
+Homepage = "https://github.com/danielandresarcones/pybastion"
+Repository = "https://github.com/danielandresarcones/pybastion"
+Issues = "https://github.com/danielandresarcones/pybastion/issues"
 
 [tool.setuptools.packages.find]
 include = ["pybastion*"]
@@ -59,3 +59,11 @@ pybastion = ["data/*.csv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+known_first_party = ["pybastion"]

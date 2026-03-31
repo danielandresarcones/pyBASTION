@@ -3,6 +3,7 @@ Dataset loaders for pyBASTION.
 """
 
 import os
+
 import pandas as pd
 
 __all__ = ["load_airtraffic", "load_NYelectricity"]

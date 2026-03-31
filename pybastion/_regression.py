@@ -6,6 +6,7 @@ Translates from R: sample_RC, init_Regression, fit_Regression (Regression.R)
 
 import numpy as np
 from scipy.linalg import cho_factor, solve_triangular
+
 from ._evol_params import dsp_initEvol0, dsp_sampleEvol0
 
 __all__ = [
@@ -54,7 +55,7 @@ def sample_RC(y, X, beta_sigma_2, sigma_e, Td, rng=None):
     c, low = cho_factor(A)
     z = rng.standard_normal(Td)
     # solve_triangular with R^T (lower) then R (upper)
-    v1 = solve_triangular(c, linht, lower=low, trans='T')
+    v1 = solve_triangular(c, linht, lower=low, trans="T")
     beta = solve_triangular(c, v1 + z, lower=low) * sigma_e
     return beta
 
@@ -117,15 +118,18 @@ def fit_Regression(data, X, bParam, obserror, rng=None):
     X = np.asarray(X, dtype=np.float64)
 
     beta = sample_RC(
-        data, X,
+        data,
+        X,
         bParam["beta_params"]["sigma_w0"] ** 2,
         obserror["sigma_e"],
         bParam["Td"],
         rng=rng,
     )
     beta_params = dsp_sampleEvol0(
-        beta / obserror["sigma_e"], bParam["beta_params"],
-        commonSD=False, rng=rng,
+        beta / obserror["sigma_e"],
+        bParam["beta_params"],
+        commonSD=False,
+        rng=rng,
     )
     n_squared_sum = float(np.sum((beta / beta_params["sigma_w0"]) ** 2))
 

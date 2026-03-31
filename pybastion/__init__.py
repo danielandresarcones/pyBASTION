@@ -10,6 +10,7 @@ Usage
 """
 
 import numpy as np
+
 from ._mcmc import fit_ASD_SV
 from ._summary import summarize_output
 from .datasets import load_airtraffic, load_NYelectricity

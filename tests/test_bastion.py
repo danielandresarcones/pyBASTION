@@ -12,27 +12,27 @@ import pandas as pd
 import pytest
 
 from pybastion import fit_BASTION, load_airtraffic, load_NYelectricity
-from pybastion._utils import robust_prod, robust_div, rinvgamma, sample_from_precision
-from pybastion._trend import build_Q_trend, sampleTrend
-from pybastion._seasonality import build_Q_season, sampleBeta_season
-from pybastion._outlier import sampleOutlier
-from pybastion._obs_error import init_sigmaE_0
 from pybastion._evol_params import (
     dsp_initEvol0,
-    dsp_sampleEvol0,
     dsp_initEvolParams,
+    dsp_sampleEvol0,
     dsp_sampleEvolParams,
     initEvolParams_HS_sparse,
+    sample_jfast,
     sampleEvolParams_HS_sparse,
     t_initEvolZeta_ps,
     t_sampleEvolZeta_ps,
-    sample_jfast,
 )
-
+from pybastion._obs_error import init_sigmaE_0
+from pybastion._outlier import sampleOutlier
+from pybastion._seasonality import build_Q_season, sampleBeta_season
+from pybastion._trend import build_Q_trend, sampleTrend
+from pybastion._utils import rinvgamma, robust_div, robust_prod, sample_from_precision
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Utility tests
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestUtils:
     def test_robust_prod(self):
@@ -60,11 +60,14 @@ class TestUtils:
     def test_sample_from_precision_identity(self):
         """Sampling from precision=I should give standard normal-like samples."""
         from scipy import sparse
+
         rng = np.random.default_rng(42)
         n = 50
         Q = sparse.eye(n, format="csc")
         linht = np.zeros(n)
-        samples = np.array([sample_from_precision(Q, linht, rng=rng) for _ in range(500)])
+        samples = np.array(
+            [sample_from_precision(Q, linht, rng=rng) for _ in range(500)]
+        )
         # Mean should be near 0
         assert np.allclose(samples.mean(axis=0), 0.0, atol=0.2)
         # Variance should be near 1
@@ -73,17 +76,21 @@ class TestUtils:
     def test_sample_from_precision_with_linht(self):
         """Sampling from precision=I with linht=ones should give mean=1."""
         from scipy import sparse
+
         rng = np.random.default_rng(42)
         n = 30
         Q = sparse.eye(n, format="csc")
         linht = np.ones(n)
-        samples = np.array([sample_from_precision(Q, linht, rng=rng) for _ in range(500)])
+        samples = np.array(
+            [sample_from_precision(Q, linht, rng=rng) for _ in range(500)]
+        )
         assert np.allclose(samples.mean(axis=0), 1.0, atol=0.2)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Precision matrix tests
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestPrecisionMatrices:
     def test_build_Q_trend_D1_symmetry(self):
@@ -134,6 +141,7 @@ class TestPrecisionMatrices:
 # ──────────────────────────────────────────────────────────────────────────────
 # Evolution parameter tests
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestEvolParams:
     def test_dsp_initEvol0_common(self):
@@ -196,6 +204,7 @@ class TestEvolParams:
 # Component sampler tests
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestSamplers:
     def test_sampleTrend_shape(self):
         rng = np.random.default_rng(42)
@@ -229,6 +238,7 @@ class TestSamplers:
 # Dataset tests
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestDatasets:
     def test_airtraffic_shape(self):
         df = load_airtraffic()
@@ -243,6 +253,7 @@ class TestDatasets:
 # ──────────────────────────────────────────────────────────────────────────────
 # Integration tests: full pipeline
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestFitBASTION:
     """Integration tests for the full MCMC pipeline."""
@@ -262,8 +273,14 @@ class TestFitBASTION:
     def test_basic_decomposition(self, simulated_data):
         y, _, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], nsave=50, nburn=50, nskip=1,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            nsave=50,
+            nburn=50,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         assert "summary" in result
         s = result["summary"]
@@ -275,8 +292,14 @@ class TestFitBASTION:
     def test_two_seasonalities(self, simulated_data):
         y, _, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7, 30], nsave=30, nburn=30, nskip=1,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7, 30],
+            nsave=30,
+            nburn=30,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         s = result["summary"]
         assert "Seasonal7_sum" in s
@@ -285,8 +308,15 @@ class TestFitBASTION:
     def test_outlier(self, simulated_data):
         y, _, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], Outlier=True, nsave=30, nburn=30, nskip=1,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            Outlier=True,
+            nsave=30,
+            nburn=30,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         assert "Outlier_sum" in result["summary"]
         assert result["summary"]["Outlier_sum"].shape == (200, 3)
@@ -294,8 +324,15 @@ class TestFitBASTION:
     def test_sv_mode(self, simulated_data):
         y, _, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], obsSV="SV", nsave=20, nburn=20, nskip=1,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            obsSV="SV",
+            nsave=20,
+            nburn=20,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         vol = result["summary"]["Volatility"]["Mean"].values
         assert len(vol) == 200
@@ -304,16 +341,30 @@ class TestFitBASTION:
     def test_sparse_trend(self, simulated_data):
         y, _, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], sparse=True, nsave=20, nburn=20, nskip=1,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            sparse=True,
+            nsave=20,
+            nburn=20,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         assert result["summary"]["Trend_sum"].shape == (200, 3)
 
     def test_two_chains(self, simulated_data):
         y, _, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], nsave=20, nburn=20, nskip=1,
-            nchains=2, seed=42, verbose=False, save_samples=True,
+            y,
+            Ks=[7],
+            nsave=20,
+            nburn=20,
+            nskip=1,
+            nchains=2,
+            seed=42,
+            verbose=False,
+            save_samples=True,
         )
         # 2 chains * 20 saves = 40 samples
         assert result["samples"]["beta_combined"].shape == (40, 200)
@@ -326,16 +377,30 @@ class TestFitBASTION:
         beta_true = np.array([3.0, -1.5])
         y = 0.01 * t + X @ beta_true + 0.3 * rng.standard_normal(T)
         result = fit_BASTION(
-            y, Ks=[7], X=X, nsave=30, nburn=30, nskip=1,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            X=X,
+            nsave=30,
+            nburn=30,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         assert "Regression_sum" in result["summary"]
 
     def test_save_samples(self, simulated_data):
         y, _, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], nsave=20, nburn=20, nskip=1,
-            nchains=1, seed=42, verbose=False, save_samples=True,
+            y,
+            Ks=[7],
+            nsave=20,
+            nburn=20,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
+            save_samples=True,
         )
         assert "samples" in result
         s = result["samples"]
@@ -349,8 +414,14 @@ class TestFitBASTION:
         """Test that the estimated trend roughly follows the true trend."""
         y, trend, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], nsave=200, nburn=200, nskip=2,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            nsave=200,
+            nburn=200,
+            nskip=2,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         est_trend = result["summary"]["Trend_sum"]["Mean"].values
         # The correlation between estimated and true trend should be high
@@ -361,8 +432,14 @@ class TestFitBASTION:
         """Test that the estimated seasonal roughly follows the true seasonal."""
         y, _, seasonal = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], nsave=200, nburn=200, nskip=2,
-            nchains=1, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            nsave=200,
+            nburn=200,
+            nskip=2,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         est_seasonal = result["summary"]["Seasonal7_sum"]["Mean"].values
         # The correlation between estimated and true seasonal should be high
@@ -373,8 +450,15 @@ class TestFitBASTION:
         """Test that the 95% CI covers at least ~50% of true trend values."""
         y, trend, _ = simulated_data
         result = fit_BASTION(
-            y, Ks=[7], cl=0.95, nsave=300, nburn=300, nskip=2,
-            nchains=2, seed=42, verbose=False,
+            y,
+            Ks=[7],
+            cl=0.95,
+            nsave=300,
+            nburn=300,
+            nskip=2,
+            nchains=2,
+            seed=42,
+            verbose=False,
         )
         ts = result["summary"]["Trend_sum"]
         inside = (ts["CR_lower"].values <= trend) & (trend <= ts["CR_upper"].values)
@@ -386,6 +470,7 @@ class TestFitBASTION:
 # Validation tests: compare against R reference outputs
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestReferenceValidation:
     """Compare Python output structure and range against saved R outputs."""
 
@@ -394,6 +479,7 @@ class TestReferenceValidation:
         """Load the R reference output for electricity decomposition."""
         try:
             import rdata
+
             parsed = rdata.parser.parse_file(
                 "BASTION/inst/extdata/BASTION_electric.rds"
             )
@@ -404,14 +490,24 @@ class TestReferenceValidation:
     def test_electric_structure_matches(self, r_electric_ref):
         """Verify Python produces the same output structure as R."""
         r_keys = set(r_electric_ref["summary"].keys())
-        expected = {"p_means", "Trend_sum", "Seasonal7_sum",
-                    "Seasonal365_sum", "Outlier_sum", "Volatility"}
+        expected = {
+            "p_means",
+            "Trend_sum",
+            "Seasonal7_sum",
+            "Seasonal365_sum",
+            "Outlier_sum",
+            "Volatility",
+        }
         assert r_keys == expected
 
     def test_electric_trend_range(self, r_electric_ref):
         """Compare the R trend range against a quick Python run."""
         r_trend = r_electric_ref["summary"]["Trend_sum"]
-        r_mean = r_trend["Mean"].values if hasattr(r_trend, "values") else np.asarray(r_trend["Mean"])
+        r_mean = (
+            r_trend["Mean"].values
+            if hasattr(r_trend, "values")
+            else np.asarray(r_trend["Mean"])
+        )
         # The R trend mean should be in a reasonable range for electricity data
         assert 10000 < np.mean(r_mean) < 30000
 
@@ -425,8 +521,17 @@ class TestReferenceValidation:
 
         # Very short run just to check scale
         result = fit_BASTION(
-            y[:500], Ks=[7, 365], Outlier=True, sparse=True, obsSV="SV",
-            nsave=10, nburn=10, nskip=1, nchains=1, seed=42, verbose=False,
+            y[:500],
+            Ks=[7, 365],
+            Outlier=True,
+            sparse=True,
+            obsSV="SV",
+            nsave=10,
+            nburn=10,
+            nskip=1,
+            nchains=1,
+            seed=42,
+            verbose=False,
         )
         py_trend_mean = result["summary"]["Trend_sum"]["Mean"].values.mean()
         r_trend_mean = np.mean(
@@ -434,12 +539,15 @@ class TestReferenceValidation:
         )
         # Should be within 30% of each other (different seeds, few iterations)
         rel_diff = abs(py_trend_mean - r_trend_mean) / abs(r_trend_mean)
-        assert rel_diff < 0.3, f"Python trend mean {py_trend_mean:.0f} vs R {r_trend_mean:.0f}"
+        assert (
+            rel_diff < 0.3
+        ), f"Python trend mean {py_trend_mean:.0f} vs R {r_trend_mean:.0f}"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Error handling tests
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestErrorHandling:
     def test_invalid_Ks_type(self):

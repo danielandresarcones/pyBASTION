@@ -5,6 +5,7 @@ Translates from R: init_sigmaE_0, fit_sigmaE_0_m, fit_sigmaE_0_m_SV (Remainder.R
 """
 
 import numpy as np
+
 from ._utils import rinvgamma
 
 __all__ = [
@@ -65,7 +66,7 @@ def fit_sigmaE_0_m(data, params_list, TT, a=0.0, b=0.0, rng=None):
         b = b + param["n_squared_sum"] / 2
 
     a = a + TT / 2
-    b = b + np.sum(offset ** 2) / 2
+    b = b + np.sum(offset**2) / 2
 
     sigma_e = np.sqrt(rinvgamma(1, a, b, rng=rng)[0])
     sigma_et = np.full(TT, sigma_e)
