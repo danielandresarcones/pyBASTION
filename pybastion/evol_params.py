@@ -13,7 +13,7 @@ Translates from R:
 import numpy as np
 from scipy.stats import median_abs_deviation, norm
 
-from ._utils import rinvgamma
+from .utils import rinvgamma
 
 __all__ = [
     "dsp_initEvol0",
@@ -260,7 +260,10 @@ def t_sampleEvolZeta_ps(zeta, Td, evolParams, rng=None):
         Td, 1.0, 1.0 / evolParams["lambda_t2"] + 1.0 / evolParams["tau_t2"], rng=rng
     )
     evolParams["tau_t2"] = rinvgamma(
-        1, (Td + 1) / 2, 1.0 / evolParams["xi"] + np.sum(1.0 / evolParams["v"]), rng=rng
+        1,
+        (Td + 1) / 2,
+        1.0 / evolParams["xi"] + np.sum(1.0 / evolParams["v"]),
+        rng=rng,
     )[0]
     evolParams["xi"] = rinvgamma(1, 1.0, 1.0 + 1.0 / evolParams["tau_t2"], rng=rng)[0]
     evolParams["sigma_wt"] = np.maximum(np.sqrt(evolParams["lambda_t2"]), 1e-6)
@@ -579,7 +582,7 @@ def init_paramsASV(data, D=2, rng=None):
         rng = np.random.default_rng()
 
     # Import here to avoid circular imports
-    from ._trend import sampleTrend
+    from .trend import sampleTrend
 
     data = np.asarray(data, dtype=np.float64).ravel()
     Td = len(data)
@@ -612,7 +615,7 @@ def fit_paramsASV(data, sParams, D=2, rng=None):
     if rng is None:
         rng = np.random.default_rng()
 
-    from ._trend import sampleTrend
+    from .trend import sampleTrend
 
     data = np.asarray(data, dtype=np.float64).ravel()
     Td = sParams["Td"]

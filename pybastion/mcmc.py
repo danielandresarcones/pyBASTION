@@ -10,13 +10,13 @@ It supports obsSV in {"const", "SV", "ASV"}.
 import numpy as np
 from tqdm import trange
 
-from ._evol_params import dsp_initSV, dsp_sampleSVparams, fit_paramsASV, init_paramsASV
-from ._obs_error import fit_sigmaE_0_m, fit_sigmaE_0_m_SV, init_sigmaE_0
-from ._outlier import fit_Outlier, init_Outlier
-from ._regression import fit_Regression, init_Regression
-from ._seasonality import fit_Sbeta, init_Sbeta
-from ._trend import fit_Tbeta, init_Tbeta
-from ._utils import robust_prod
+from .evol_params import dsp_initSV, dsp_sampleSVparams, fit_paramsASV, init_paramsASV
+from .obs_error import fit_sigmaE_0_m, fit_sigmaE_0_m_SV, init_sigmaE_0
+from .outlier import fit_Outlier, init_Outlier
+from .regression import fit_Regression, init_Regression
+from .seasonality import fit_Sbeta, init_Sbeta
+from .trend import fit_Tbeta, init_Tbeta
+from .utils import robust_prod
 
 __all__ = ["fit_ASD_SV"]
 

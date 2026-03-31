@@ -7,7 +7,7 @@ Translates from R: build_Q_trend, sampleTrend, init_Tbeta, fit_Tbeta (Trend.R)
 import numpy as np
 from scipy import sparse
 
-from ._evol_params import (
+from .evol_params import (
     dsp_initEvol0,
     dsp_initEvolParams,
     dsp_sampleEvol0,
@@ -15,7 +15,7 @@ from ._evol_params import (
     initEvolParams_HS_sparse,
     sampleEvolParams_HS_sparse,
 )
-from ._utils import robust_prod, sample_from_precision
+from .utils import robust_prod, sample_from_precision
 
 __all__ = [
     "build_Q_trend",

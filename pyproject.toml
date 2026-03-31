@@ -54,7 +54,7 @@ Issues = "https://github.com/danielandresarcones/pybastion/issues"
 include = ["pybastion*"]
 
 [tool.setuptools.package-data]
-pybastion = ["data/*.csv"]
+"pybastion.datasets" = ["*.csv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

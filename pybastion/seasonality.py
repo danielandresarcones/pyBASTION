@@ -7,13 +7,13 @@ Translates from R: build_Q_season, sampleBeta_season, init_Sbeta, fit_Sbeta (Sea
 import numpy as np
 from scipy import sparse
 
-from ._evol_params import (
+from .evol_params import (
     dsp_initEvol0,
     dsp_initEvolParams,
     dsp_sampleEvol0,
     dsp_sampleEvolParams,
 )
-from ._utils import robust_prod, sample_from_precision
+from .utils import robust_prod, sample_from_precision
 
 __all__ = [
     "build_Q_season",

@@ -41,11 +41,12 @@ pip install "pybastion[fast]"
 ## Quick Start
 
 ```python
-from pybastion import fit_BASTION, load_airtraffic
+from pybastion import fit_BASTION
+from pybastion.datasets import load_airtraffic
 
 # Load example dataset
 df = load_airtraffic()
-y = df["Passengers"].values
+y = df["Int_Pax"].values
 
 # Decompose with weekly (7-day) seasonality
 result = fit_BASTION(y, Ks=[7], Outlier=True, seed=42)
@@ -59,10 +60,11 @@ seasonal = summary["Seasonal7_sum"]   # Seasonal component for period 7
 ### Multiple Seasonalities
 
 ```python
-from pybastion import fit_BASTION, load_NYelectricity
+from pybastion import fit_BASTION
+from pybastion.datasets import load_NYelectricity
 
 df = load_NYelectricity()
-y = df["demand"].values
+y = df.iloc[:, 1].values
 
 # Weekly (7) and yearly (365) seasonal periods
 result = fit_BASTION(y, Ks=[7, 365], Outlier=True, seed=42)
@@ -124,7 +126,7 @@ The summary dict contains:
 ### Data Loaders
 
 ```python
-from pybastion import load_airtraffic, load_NYelectricity
+from pybastion.datasets import load_airtraffic, load_NYelectricity
 
 df_air = load_airtraffic()      # 249 × 3 DataFrame
 df_elec = load_NYelectricity()  # 3288 × 2 DataFrame
@@ -132,7 +134,7 @@ df_elec = load_NYelectricity()  # 3288 × 2 DataFrame
 
 ## Requirements
 
-- Python ≥ 3.9
+- Python ≥ 3.10
 - NumPy ≥ 1.22
 - SciPy ≥ 1.8
 - pandas ≥ 1.4

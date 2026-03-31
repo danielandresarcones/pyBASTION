@@ -6,7 +6,7 @@ Translates from R: init_sigmaE_0, fit_sigmaE_0_m, fit_sigmaE_0_m_SV (Remainder.R
 
 import numpy as np
 
-from ._utils import rinvgamma
+from .utils import rinvgamma
 
 __all__ = [
     "init_sigmaE_0",

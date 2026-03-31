@@ -6,7 +6,7 @@ Translates from R: sampleOutlier, init_Outlier, fit_Outlier (Outlier.R)
 
 import numpy as np
 
-from ._evol_params import t_initEvolZeta_ps, t_sampleEvolZeta_ps
+from .evol_params import t_initEvolZeta_ps, t_sampleEvolZeta_ps
 
 __all__ = [
     "sampleOutlier",

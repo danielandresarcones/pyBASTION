@@ -7,7 +7,7 @@ Translates from R: sample_RC, init_Regression, fit_Regression (Regression.R)
 import numpy as np
 from scipy.linalg import cho_factor, solve_triangular
 
-from ._evol_params import dsp_initEvol0, dsp_sampleEvol0
+from .evol_params import dsp_initEvol0, dsp_sampleEvol0
 
 __all__ = [
     "sample_RC",

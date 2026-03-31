@@ -11,8 +11,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pybastion import fit_BASTION, load_airtraffic, load_NYelectricity
-from pybastion._evol_params import (
+from pybastion import fit_BASTION
+from pybastion.datasets import load_airtraffic, load_NYelectricity
+from pybastion.evol_params import (
     dsp_initEvol0,
     dsp_initEvolParams,
     dsp_sampleEvol0,
@@ -23,11 +24,11 @@ from pybastion._evol_params import (
     t_initEvolZeta_ps,
     t_sampleEvolZeta_ps,
 )
-from pybastion._obs_error import init_sigmaE_0
-from pybastion._outlier import sampleOutlier
-from pybastion._seasonality import build_Q_season, sampleBeta_season
-from pybastion._trend import build_Q_trend, sampleTrend
-from pybastion._utils import rinvgamma, robust_div, robust_prod, sample_from_precision
+from pybastion.obs_error import init_sigmaE_0
+from pybastion.outlier import sampleOutlier
+from pybastion.seasonality import build_Q_season, sampleBeta_season
+from pybastion.trend import build_Q_trend, sampleTrend
+from pybastion.utils import rinvgamma, robust_div, robust_prod, sample_from_precision
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Utility tests
