@@ -4,11 +4,12 @@ Utility functions for pyBASTION: robust arithmetic, sparse Cholesky, etc.
 Translates from R: robust_cholesky, robust_prod, robust_div (main_functions.R)
 """
 
-import numpy as np
 import warnings
+
+import numpy as np
 from scipy import sparse
-from scipy.sparse import linalg as splinalg
 from scipy.linalg import cho_factor, cho_solve
+from scipy.sparse import linalg as splinalg
 
 __all__ = [
     "robust_cholesky_solve",
@@ -76,6 +77,7 @@ def sample_from_precision(Q, linht, rng=None):
     # Try sparse Cholesky via scikit-sparse if available
     try:
         from sksparse.cholmod import cholesky as cholmod_cholesky
+
         if not sparse.issparse(Q):
             Q = sparse.csc_matrix(Q)
         factor = cholmod_cholesky(Q)

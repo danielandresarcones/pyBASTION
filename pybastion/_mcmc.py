@@ -10,12 +10,12 @@ It supports obsSV in {"const", "SV", "ASV"}.
 import numpy as np
 from tqdm import trange
 
-from ._obs_error import init_sigmaE_0, fit_sigmaE_0_m, fit_sigmaE_0_m_SV
-from ._trend import init_Tbeta, fit_Tbeta
-from ._seasonality import init_Sbeta, fit_Sbeta
-from ._outlier import init_Outlier, fit_Outlier
-from ._regression import init_Regression, fit_Regression
-from ._evol_params import dsp_initSV, dsp_sampleSVparams, init_paramsASV, fit_paramsASV
+from ._evol_params import dsp_initSV, dsp_sampleSVparams, fit_paramsASV, init_paramsASV
+from ._obs_error import fit_sigmaE_0_m, fit_sigmaE_0_m_SV, init_sigmaE_0
+from ._outlier import fit_Outlier, init_Outlier
+from ._regression import fit_Regression, init_Regression
+from ._seasonality import fit_Sbeta, init_Sbeta
+from ._trend import fit_Tbeta, init_Tbeta
 from ._utils import robust_prod
 
 __all__ = ["fit_ASD_SV"]
@@ -128,20 +128,27 @@ def fit_ASD_SV(
         cn = sParam["colname"]
         params_list[cn] = sParam
         beta_mat[:, ik] = sParam["s_mu"]
-        error_mat[:, ik] = np.concatenate([
-            sParam["s_evolParams23"]["sigma_w0"],
-            sParam["s_evolParams3k"]["sigma_wt"],
-            sParam["s_evolParamskT"]["sigma_wt"],
-        ]) ** 2
+        error_mat[:, ik] = (
+            np.concatenate(
+                [
+                    sParam["s_evolParams23"]["sigma_w0"],
+                    sParam["s_evolParams3k"]["sigma_wt"],
+                    sParam["s_evolParamskT"]["sigma_wt"],
+                ]
+            )
+            ** 2
+        )
 
     # Trend
     tParam = init_Tbeta(y, obserror, evol_error, D, sparse, rng=rng)
     params_list["Trend"] = tParam
     beta_mat[:, col_trend] = tParam["s_mu"]
-    error_mat[:, col_trend] = np.concatenate([
-        tParam["s_evolParams0"]["sigma_w0"] ** 2,
-        tParam["s_evolParams"]["sigma_wt"] ** 2,
-    ])
+    error_mat[:, col_trend] = np.concatenate(
+        [
+            tParam["s_evolParams0"]["sigma_w0"] ** 2,
+            tParam["s_evolParams"]["sigma_wt"] ** 2,
+        ]
+    )
 
     # Regression
     bParam = None
@@ -169,7 +176,7 @@ def fit_ASD_SV(
         obserror["sigma_e"] = 1.0
     elif ASVm:
         residuals = y - beta_mat.sum(axis=1)
-        svParam = init_paramsASV(np.log(residuals ** 2 + 1e-300), rng=rng)
+        svParam = init_paramsASV(np.log(residuals**2 + 1e-300), rng=rng)
         obserror["sigma_et"] = svParam["sigma_wt"]
         obserror["sigma_e"] = 1.0
 
@@ -195,7 +202,7 @@ def fit_ASD_SV(
             obserror["sigma_et"] = svParam["sigma_wt"]
         elif ASVm:
             residuals = y - beta_mat.sum(axis=1)
-            svParam = fit_paramsASV(np.log(residuals ** 2 + 1e-300), svParam, rng=rng)
+            svParam = fit_paramsASV(np.log(residuals**2 + 1e-300), svParam, rng=rng)
             obserror["sigma_et"] = svParam["sigma_wt"]
         else:
             obserror = fit_sigmaE_0_m(y, params_list, TT, rng=rng)
@@ -206,7 +213,9 @@ def fit_ASD_SV(
             mask = np.ones(n_beta_cols, dtype=bool)
             mask[col_reg] = False
             resid = y - beta_mat[:, mask].sum(axis=1)
-            bParam = fit_Regression(resid, X, params_list["Regression"], obserror, rng=rng)
+            bParam = fit_Regression(
+                resid, X, params_list["Regression"], obserror, rng=rng
+            )
             params_list["Regression"] = bParam
             beta_mat[:, col_reg] = bParam["s_mu"]
 
@@ -221,24 +230,33 @@ def fit_ASD_SV(
             sParam = fit_Sbeta(resid, params_list[cn], obserror, evol_error, k, rng=rng)
             params_list[cn] = sParam
             beta_mat[:, ik] = sParam["s_mu"]
-            error_mat[:, ik] = np.concatenate([
-                sParam["s_evolParams23"]["sigma_w0"],
-                sParam["s_evolParams3k"]["sigma_wt"],
-                sParam["s_evolParamskT"]["sigma_wt"],
-            ]) ** 2
+            error_mat[:, ik] = (
+                np.concatenate(
+                    [
+                        sParam["s_evolParams23"]["sigma_w0"],
+                        sParam["s_evolParams3k"]["sigma_wt"],
+                        sParam["s_evolParamskT"]["sigma_wt"],
+                    ]
+                )
+                ** 2
+            )
 
         # ── Trend ──
         mask = np.ones(n_beta_cols, dtype=bool)
         mask[col_trend] = False
         tParam_data = y - beta_mat[:, mask].sum(axis=1)
 
-        tParam = fit_Tbeta(tParam_data, tParam, obserror, evol_error, D, sparse, rng=rng)
+        tParam = fit_Tbeta(
+            tParam_data, tParam, obserror, evol_error, D, sparse, rng=rng
+        )
         params_list["Trend"] = tParam
         beta_mat[:, col_trend] = tParam["s_mu"]
-        error_mat[:, col_trend] = np.concatenate([
-            tParam["s_evolParams0"]["sigma_w0"] ** 2,
-            tParam["s_evolParams"]["sigma_wt"] ** 2,
-        ])
+        error_mat[:, col_trend] = np.concatenate(
+            [
+                tParam["s_evolParams0"]["sigma_w0"] ** 2,
+                tParam["s_evolParams"]["sigma_wt"] ** 2,
+            ]
+        )
 
         # ── Outlier ──
         if Outlier:
@@ -264,7 +282,9 @@ def fit_ASD_SV(
                 if reg:
                     post_reg[isave] = bParam["beta"]
                 post_remainder[isave] = y - beta_combined
-                post_yhat[isave] = beta_combined + obserror["sigma_et"] * rng.standard_normal(TT)
+                post_yhat[isave] = beta_combined + obserror[
+                    "sigma_et"
+                ] * rng.standard_normal(TT)
                 isave += 1
                 skipcount = 0
 
@@ -275,7 +295,7 @@ def fit_ASD_SV(
     post_s_beta[:, :, col_trend] += offset_y
     posterior_samples["beta"] = post_s_beta
     posterior_samples["evol_sigma_t2"] = post_s_evol_sigma_t2
-    posterior_samples["obs_sigma_t2"] = robust_prod(post_obs_sigma_t2, norm_y ** 2)
+    posterior_samples["obs_sigma_t2"] = robust_prod(post_obs_sigma_t2, norm_y**2)
     posterior_samples["remainder"] = post_remainder
     if reg:
         posterior_samples["reg_coef"] = post_reg

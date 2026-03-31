@@ -6,13 +6,14 @@ Translates from R: build_Q_season, sampleBeta_season, init_Sbeta, fit_Sbeta (Sea
 
 import numpy as np
 from scipy import sparse
-from ._utils import sample_from_precision, robust_prod
+
 from ._evol_params import (
     dsp_initEvol0,
-    dsp_sampleEvol0,
     dsp_initEvolParams,
+    dsp_sampleEvol0,
     dsp_sampleEvolParams,
 )
+from ._utils import robust_prod, sample_from_precision
 
 __all__ = [
     "build_Q_season",
@@ -163,7 +164,7 @@ def init_Sbeta(data, obserror, evol_error, k, rng=None):
     s_mu = sampleBeta_season(
         data,
         obs_sigma_t2=obserror["sigma_et"] ** 2,
-        evol_sigma_t2=sigma_e ** 2 * np.full(Td, 0.01),
+        evol_sigma_t2=sigma_e**2 * np.full(Td, 0.01),
         Td=Td,
         k=k,
         rng=rng,
@@ -174,25 +175,27 @@ def init_Sbeta(data, obserror, evol_error, k, rng=None):
 
     # S(3:k-1) : second differences of s_mu[0:k-1]
     # R: i1_km1 = 1:(k-1) => Python: 0:k-1
-    omega_2 = np.diff(s_mu[:k - 1], n=2)
+    omega_2 = np.diff(s_mu[: k - 1], n=2)
     s_evolParams3k = dsp_initEvolParams(omega_2 / sigma_e, evol_error="HS")
 
     # S k+1,..,T
     # R: c((s_mu[k] + sum(s_mu[i1_km1])), diff(s_mu, lag=k))
     # s_mu[k] in R is s_mu[k-1] in Python (0-indexed)
     # sum(s_mu[i1_km1]) = sum(s_mu[1:(k-1)]) in R = sum(s_mu[0:k-1]) in Python
-    first_val = s_mu[k - 1] + np.sum(s_mu[:k - 1])
-    lag_diff = s_mu[k:] - s_mu[:Td - k]  # diff with lag k
+    first_val = s_mu[k - 1] + np.sum(s_mu[: k - 1])
+    lag_diff = s_mu[k:] - s_mu[: Td - k]  # diff with lag k
     omega_kT = np.concatenate([[first_val], lag_diff])
     s_evolParamskT = dsp_initEvolParams(omega_kT / sigma_e, evol_error="HS")
 
     # Normalized squared sum
     all_vals = np.concatenate([s_mu[:2], omega_2, omega_kT])
-    all_sigmas = np.concatenate([
-        s_evolParams23["sigma_w0"],
-        s_evolParams3k["sigma_wt"],
-        s_evolParamskT["sigma_wt"],
-    ])
+    all_sigmas = np.concatenate(
+        [
+            s_evolParams23["sigma_w0"],
+            s_evolParams3k["sigma_wt"],
+            s_evolParamskT["sigma_wt"],
+        ]
+    )
     n_squared_sum = np.sum((all_vals / all_sigmas) ** 2)
 
     return {
@@ -230,12 +233,14 @@ def fit_Sbeta(data, sParam, obserror, evol_error, k, rng=None):
     Td = sParam["Td"]
     obs_sigma_e = obserror["sigma_e"]
 
-    evol_sigmas = np.concatenate([
-        sParam["s_evolParams23"]["sigma_w0"],
-        sParam["s_evolParams3k"]["sigma_wt"],
-        sParam["s_evolParamskT"]["sigma_wt"],
-    ])
-    evol_sigma_t2 = robust_prod(obs_sigma_e ** 2, evol_sigmas ** 2)
+    evol_sigmas = np.concatenate(
+        [
+            sParam["s_evolParams23"]["sigma_w0"],
+            sParam["s_evolParams3k"]["sigma_wt"],
+            sParam["s_evolParamskT"]["sigma_wt"],
+        ]
+    )
+    evol_sigma_t2 = robust_prod(obs_sigma_e**2, evol_sigmas**2)
 
     s_mu = sampleBeta_season(
         data,
@@ -248,12 +253,14 @@ def fit_Sbeta(data, sParam, obserror, evol_error, k, rng=None):
 
     # S 1:2
     s_evolParams23 = dsp_sampleEvol0(
-        s_mu[:2] / obs_sigma_e, sParam["s_evolParams23"],
-        commonSD=True, rng=rng,
+        s_mu[:2] / obs_sigma_e,
+        sParam["s_evolParams23"],
+        commonSD=True,
+        rng=rng,
     )
 
     # S(3:k-1)
-    omega_2 = np.diff(s_mu[:k - 1], n=2)
+    omega_2 = np.diff(s_mu[: k - 1], n=2)
     s_evolParams3k = dsp_sampleEvolParams(
         omega_2 / obs_sigma_e,
         evolParams=sParam["s_evolParams3k"],
@@ -262,8 +269,8 @@ def fit_Sbeta(data, sParam, obserror, evol_error, k, rng=None):
     )
 
     # S k+1,..,T
-    first_val = s_mu[k - 1] + np.sum(s_mu[:k - 1])
-    lag_diff = s_mu[k:] - s_mu[:Td - k]
+    first_val = s_mu[k - 1] + np.sum(s_mu[: k - 1])
+    lag_diff = s_mu[k:] - s_mu[: Td - k]
     omega_kT = np.concatenate([[first_val], lag_diff])
     s_evolParamskT = dsp_sampleEvolParams(
         omega_kT / obs_sigma_e,
@@ -274,11 +281,13 @@ def fit_Sbeta(data, sParam, obserror, evol_error, k, rng=None):
 
     # Normalized squared sum
     all_vals = np.concatenate([s_mu[:2], omega_2, omega_kT])
-    all_sigmas = np.concatenate([
-        s_evolParams23["sigma_w0"],
-        s_evolParams3k["sigma_wt"],
-        s_evolParamskT["sigma_wt"],
-    ])
+    all_sigmas = np.concatenate(
+        [
+            s_evolParams23["sigma_w0"],
+            s_evolParams3k["sigma_wt"],
+            s_evolParamskT["sigma_wt"],
+        ]
+    )
     n_squared_sum = np.sum((all_vals / all_sigmas) ** 2)
 
     sParam["s_mu"] = s_mu

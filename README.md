@@ -1,5 +1,11 @@
 # pyBASTION
 
+[![Lint](https://github.com/danielandresarcones/pybastion/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/danielandresarcones/pybastion/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/danielandresarcones/pybastion/ci.yml?label=tests)](https://github.com/danielandresarcones/pybastion/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+
 Python implementation of **BASTION** (Bayesian Adaptive Seasonality and Trend Decomposition Incorporating Outliers and Noise).
 
 BASTION is a flexible Bayesian framework for decomposing time series into trend and multiple seasonality components. It offers three key advantages over existing decomposition methods:

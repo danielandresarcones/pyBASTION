@@ -6,15 +6,16 @@ Translates from R: build_Q_trend, sampleTrend, init_Tbeta, fit_Tbeta (Trend.R)
 
 import numpy as np
 from scipy import sparse
-from ._utils import sample_from_precision, robust_prod
+
 from ._evol_params import (
     dsp_initEvol0,
-    dsp_sampleEvol0,
     dsp_initEvolParams,
+    dsp_sampleEvol0,
     dsp_sampleEvolParams,
     initEvolParams_HS_sparse,
     sampleEvolParams_HS_sparse,
 )
+from ._utils import robust_prod, sample_from_precision
 
 __all__ = [
     "build_Q_trend",
@@ -49,9 +50,11 @@ def build_Q_trend(obs_sigma_t2, evol_sigma_t2, D, Td):
 
     if D == 1:
         # Main diagonal
-        d0 = (1.0 / obs_sigma_t2
-              + 1.0 / evol_sigma_t2
-              + np.append(1.0 / evol_sigma_t2[1:], 0.0))
+        d0 = (
+            1.0 / obs_sigma_t2
+            + 1.0 / evol_sigma_t2
+            + np.append(1.0 / evol_sigma_t2[1:], 0.0)
+        )
         # Super-diagonal (k=1)
         d1 = -1.0 / evol_sigma_t2[1:]
 
@@ -61,19 +64,23 @@ def build_Q_trend(obs_sigma_t2, evol_sigma_t2, D, Td):
         # evol_sigma_t2[2:Td] = evol_sigma_t2[-(1:2)] in R (removing first two)
         ev_3on = evol_sigma_t2[2:]  # length Td-2
 
-        d0 = (1.0 / obs_sigma_t2
-              + 1.0 / evol_sigma_t2
-              + np.concatenate([[0.0], 4.0 / ev_3on, [0.0]])
-              + np.concatenate([1.0 / ev_3on, [0.0, 0.0]]))
+        d0 = (
+            1.0 / obs_sigma_t2
+            + 1.0 / evol_sigma_t2
+            + np.concatenate([[0.0], 4.0 / ev_3on, [0.0]])
+            + np.concatenate([1.0 / ev_3on, [0.0, 0.0]])
+        )
         # d0 has length Td
 
         # Sub/super diagonal (k=1), length Td-1
         # R: c(-2/evol_sigma_t2[3], -2*(1/evol_sigma_t2[-(1:2)] + c(1/evol_sigma_t2[-(1:3)], 0)))
         # evol_sigma_t2[3] in R is evol_sigma_t2[2] in Python (0-indexed)
-        d1 = np.concatenate([
-            [-2.0 / evol_sigma_t2[2]],
-            -2.0 * (1.0 / ev_3on + np.append(1.0 / evol_sigma_t2[3:], 0.0))
-        ])
+        d1 = np.concatenate(
+            [
+                [-2.0 / evol_sigma_t2[2]],
+                -2.0 * (1.0 / ev_3on + np.append(1.0 / evol_sigma_t2[3:], 0.0)),
+            ]
+        )
         # d1 has length Td-1
 
         # k=2 diagonal, length Td-2
@@ -89,16 +96,21 @@ def build_Q_trend(obs_sigma_t2, evol_sigma_t2, D, Td):
     elif D == 3:
         ev_4on = evol_sigma_t2[3:]  # evol_sigma_t2[4:Td] in R (1-based)
 
-        d0 = (1.0 / evol_sigma_t2
-              + np.concatenate([[0.0, 0.0], 9.0 / ev_4on, [0.0]])
-              + np.concatenate([[0.0], 9.0 / ev_4on, [0.0, 0.0]])
-              + np.concatenate([1.0 / ev_4on, [0.0, 0.0, 0.0]])
-              + 1.0 / obs_sigma_t2)
-        d1 = -(np.concatenate([3.0 / ev_4on, [0.0, 0.0]])
-               + np.concatenate([[0.0], 9.0 / ev_4on, [0.0]])
-               + np.concatenate([[0.0, 0.0], 3.0 / ev_4on]))
-        d2 = (np.concatenate([3.0 / ev_4on, [0.0]])
-              + np.concatenate([[0.0], 3.0 / ev_4on]))
+        d0 = (
+            1.0 / evol_sigma_t2
+            + np.concatenate([[0.0, 0.0], 9.0 / ev_4on, [0.0]])
+            + np.concatenate([[0.0], 9.0 / ev_4on, [0.0, 0.0]])
+            + np.concatenate([1.0 / ev_4on, [0.0, 0.0, 0.0]])
+            + 1.0 / obs_sigma_t2
+        )
+        d1 = -(
+            np.concatenate([3.0 / ev_4on, [0.0, 0.0]])
+            + np.concatenate([[0.0], 9.0 / ev_4on, [0.0]])
+            + np.concatenate([[0.0, 0.0], 3.0 / ev_4on])
+        )
+        d2 = np.concatenate([3.0 / ev_4on, [0.0]]) + np.concatenate(
+            [[0.0], 3.0 / ev_4on]
+        )
         d3 = -1.0 / ev_4on
 
         Q = sparse.diags(
@@ -195,7 +207,9 @@ def init_Tbeta(data, obserror, evol_error, D, sparse_flag, rng=None):
 
     n_squared_sum = np.sum(
         np.concatenate([s_mu[:D], s_omega]) ** 2
-        / np.concatenate([s_evolParams0["sigma_w0"] ** 2, s_evolParams["sigma_wt"] ** 2])
+        / np.concatenate(
+            [s_evolParams0["sigma_w0"] ** 2, s_evolParams["sigma_wt"] ** 2]
+        )
     )
 
     return {
@@ -232,11 +246,13 @@ def fit_Tbeta(data, tParam, obserror, evol_error, D, sparse_flag, rng=None):
     data = np.asarray(data, dtype=np.float64).ravel()
     obs_sigma_e = obserror["sigma_e"]
 
-    evol_sigmas = np.concatenate([
-        tParam["s_evolParams0"]["sigma_w0"],
-        tParam["s_evolParams"]["sigma_wt"],
-    ])
-    evol_sigma_t2 = robust_prod(obs_sigma_e ** 2, evol_sigmas ** 2)
+    evol_sigmas = np.concatenate(
+        [
+            tParam["s_evolParams0"]["sigma_w0"],
+            tParam["s_evolParams"]["sigma_wt"],
+        ]
+    )
+    evol_sigma_t2 = robust_prod(obs_sigma_e**2, evol_sigmas**2)
 
     s_mu = sampleTrend(
         data,
@@ -250,7 +266,9 @@ def fit_Tbeta(data, tParam, obserror, evol_error, D, sparse_flag, rng=None):
     s_omega = np.diff(s_mu, n=D)
     s_mu0 = s_mu[:D]
 
-    s_evolParams0 = dsp_sampleEvol0(s_mu0 / obs_sigma_e, tParam["s_evolParams0"], rng=rng)
+    s_evolParams0 = dsp_sampleEvol0(
+        s_mu0 / obs_sigma_e, tParam["s_evolParams0"], rng=rng
+    )
 
     if sparse_flag:
         s_evolParams = sampleEvolParams_HS_sparse(
@@ -267,7 +285,9 @@ def fit_Tbeta(data, tParam, obserror, evol_error, D, sparse_flag, rng=None):
 
     n_squared_sum = np.sum(
         np.concatenate([s_mu[:D], s_omega]) ** 2
-        / np.concatenate([s_evolParams0["sigma_w0"] ** 2, s_evolParams["sigma_wt"] ** 2])
+        / np.concatenate(
+            [s_evolParams0["sigma_w0"] ** 2, s_evolParams["sigma_wt"] ** 2]
+        )
     )
 
     tParam["s_mu"] = s_mu
