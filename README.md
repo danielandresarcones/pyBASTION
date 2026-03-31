@@ -19,7 +19,7 @@ pip install pybastion
 For development:
 
 ```bash
-git clone https://github.com/<your-username>/pybastion.git
+git clone https://github.com/danielandresarcones/pybastion.git
 cd pybastion
 pip install -e ".[dev]"
 ```
