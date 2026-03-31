@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "pybastion"
+version = "0.1.0"
+description = "Python implementation of BASTION (Bayesian Adaptive Seasonality Trend Decomposition Incorporating Outliers and Noise)"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Jason B. Cho", email = "bc454@cornell.edu"},
+    {name = "David S. Matteson"},
+]
+keywords = [
+    "time-series",
+    "decomposition",
+    "bayesian",
+    "seasonality",
+    "trend",
+    "outlier-detection",
+    "mcmc",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.8",
+    "pandas>=1.4",
+    "tqdm>=4.0",
+]
+
+[project.optional-dependencies]
+fast = ["scikit-sparse"]
+dev = ["pytest", "pyreadr", "matplotlib"]
+
+[project.urls]
+Homepage = "https://github.com/jasonbcho/pybastion"
+Repository = "https://github.com/jasonbcho/pybastion"
+Issues = "https://github.com/jasonbcho/pybastion/issues"
+
+[tool.setuptools.packages.find]
+include = ["pybastion*"]
+
+[tool.setuptools.package-data]
+pybastion = ["data/*.csv"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

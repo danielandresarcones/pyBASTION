@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "pyBASTION"
+type: software
+authors:
+  - family-names: Cho
+    given-names: Jason B.
+    email: bc454@cornell.edu
+  - family-names: Matteson
+    given-names: David S.
+version: 0.1.0
+date-released: "2025-01-01"
+license: MIT
+url: "https://github.com/jasonbcho/pybastion"
+repository-code: "https://github.com/jasonbcho/pybastion"
+keywords:
+  - time-series
+  - decomposition
+  - bayesian
+  - seasonality
+  - trend
+  - outlier-detection
+  - mcmc
+preferred-citation:
+  type: article
+  title: "BASTION: Bayesian Adaptive Seasonality and Trend Decomposition Incorporating Outliers and Noise"
+  authors:
+    - family-names: Cho
+      given-names: Jason B.
+    - family-names: Matteson
+      given-names: David S.
+  year: 2025
+  identifiers:
+    - type: other
+      value: "arXiv:2601.18052"
+      description: "arXiv preprint"
