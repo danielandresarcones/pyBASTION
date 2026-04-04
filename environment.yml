@@ -1,0 +1,15 @@
+name: pybastion
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - tqdm
+  - pyreadr
+  - scikit-sparse
+  - pip
+  - pip:
+    - emcee
