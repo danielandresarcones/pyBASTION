@@ -111,7 +111,7 @@ def dsp_sampleEvol0(mu0, evolParams0, commonSD=False, A=1.0, rng=None):
 
 def dsp_initEvolParams(omega, evol_error="HS"):
     """Initialize evolution error parameters (Horseshoe)."""
-    omega = np.atleast_2d(np.asarray(omega, dtype=np.float64))
+    omega = np.asarray(omega, dtype=np.float64)
     if omega.ndim == 1:
         omega = omega.reshape(-1, 1)
     n, p = omega.shape
@@ -141,7 +141,7 @@ def dsp_sampleEvolParams(omega, evolParams, sigma_e=1.0, evol_error="HS", rng=No
     if rng is None:
         rng = np.random.default_rng()
 
-    omega = np.atleast_2d(np.asarray(omega, dtype=np.float64))
+    omega = np.asarray(omega, dtype=np.float64)
     if omega.ndim == 1:
         omega = omega.reshape(-1, 1)
     n, p = omega.shape
