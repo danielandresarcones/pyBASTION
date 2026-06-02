@@ -91,6 +91,31 @@ X = np.column_stack([covariate1, covariate2])  # (T, p) matrix
 result = fit_BASTION(y, Ks=[7], X=X, seed=42)
 ```
 
+### Advanced sampler options
+
+For lower-level MCMC control, call `fit_ASD_SV()` directly:
+
+```python
+from pybastion.mcmc import fit_ASD_SV
+
+# Dispatch component updates through the sampler's parallel backend
+chain = fit_ASD_SV(y, Ks=[7, 30], parallel=True, rng=np.random.default_rng(42))
+
+# Store posterior means/variances only instead of every saved draw
+moments = fit_ASD_SV(
+    y,
+    Ks=[7, 30],
+    rao_blackwell=True,
+    rng=np.random.default_rng(42),
+)
+```
+
+- `parallel=True` keeps the observation-error update first and preserves the
+  Gibbs block order while dispatching component updates through the sampler's
+  worker pool.
+- `rao_blackwell=True` returns `moments` and `streaming_stats` instead of full
+  posterior samples, which substantially reduces memory use for large `nsave`.
+
 ## API Reference
 
 ### `fit_BASTION(y, Ks, ...)`
