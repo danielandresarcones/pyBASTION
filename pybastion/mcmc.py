@@ -26,7 +26,7 @@ __all__ = ["fit_ASD_SV"]
 
 def _spawn_child_rngs(rng, n_children):
     """Create independent child RNGs from a parent generator."""
-    entropy = rng.integers(0, np.iinfo(np.uint32).max, size=4, dtype=np.uint32)
+    entropy = rng.integers(0, 2**32, size=4, dtype=np.uint32)
     seed_sequence = np.random.SeedSequence(entropy)
     return [np.random.default_rng(child) for child in seed_sequence.spawn(n_children)]
 
@@ -143,7 +143,10 @@ def _streaming_moments(stats):
     for key, total in stats["sum"].items():
         mean = total / count
         var = stats["sum_sq"][key] / count - mean**2
-        moments[key] = {"mean": mean, "var": np.maximum(var, 0.0)}
+        moments[key] = {
+            "mean": mean,
+            "var": np.maximum(var, 0.0),  # Guard against tiny negative round-off.
+        }
     return moments
 
 
@@ -193,8 +196,9 @@ def fit_ASD_SV(
     obsSV : str in {"const", "SV", "ASV"}
     nsave, nburn, nskip : int
     parallel : bool
-        If True, dispatch component updates through a worker pool while
-        preserving the observation-error-first Gibbs block order.
+        If True, parallelize the seasonal feature-stream updates with
+        independent child RNGs while preserving the observation-error-first
+        Gibbs block order for the remaining blocks.
     rao_blackwell : bool
         If True, accumulate streaming posterior sums and sums of squares
         and return posterior means/variances instead of full samples.
@@ -350,13 +354,9 @@ def fit_ASD_SV(
     nstot = nburn + (nskip + 1) * nsave
     skipcount = 0
     isave = 0
-    max_parallel_jobs = nKs + 1 + int(reg) + int(Outlier)
-
-    pool = (
-        ThreadPool(processes=max_parallel_jobs)
-        if parallel and max_parallel_jobs > 1
-        else None
-    )
+    thread_pool = (
+        ThreadPool(processes=nKs) if parallel and nKs > 1 else None
+    )  # ThreadPool uses 'processes' for the thread count.
     try:
         iterator = trange(nstot, desc="MCMC", disable=not verbose)
         for nsi in iterator:
@@ -371,7 +371,7 @@ def fit_ASD_SV(
             else:
                 obserror = fit_sigmaE_0_m(y, params_list, TT, rng=rng)
 
-            if pool is None:
+            if thread_pool is None:
                 # ── Regression ──
                 if reg:
                     mask = np.ones(n_beta_cols, dtype=bool)
@@ -438,66 +438,70 @@ def fit_ASD_SV(
                         )
             else:
                 if reg:
-                    reg_task = {
-                        "kind": "Regression",
-                        "data": y - (beta_mat.sum(axis=1) - beta_mat[:, col_reg]),
-                        "X": X,
-                        "param": params_list["Regression"],
-                        "obserror": obserror,
-                        "rng": rng,
-                    }
-                    reg_result = pool.apply(_sample_component, (reg_task,))
-                    bParam = reg_result["param"]
+                    mask = np.ones(n_beta_cols, dtype=bool)
+                    mask[col_reg] = False
+                    resid = y - beta_mat[:, mask].sum(axis=1)
+                    bParam = fit_Regression(
+                        resid, X, params_list["Regression"], obserror, rng=rng
+                    )
                     params_list["Regression"] = bParam
-                    beta_mat[:, col_reg] = reg_result["beta"]
+                    beta_mat[:, col_reg] = bParam["s_mu"]
 
+                snapshot_beta = beta_mat.copy()
+                snapshot_sum = snapshot_beta.sum(axis=1)
+                child_rngs = _spawn_child_rngs(rng, nKs)
+                tasks = []
                 for ik, k in enumerate(Ks):
                     cn = f"Seasonal{k}"
-                    seasonal_task = {
-                        "kind": "Seasonal",
-                        "index": ik,
-                        "data": y - (beta_mat.sum(axis=1) - beta_mat[:, ik]),
-                        "param": params_list[cn],
-                        "obserror": obserror,
-                        "evol_error": evol_error,
-                        "k": k,
-                        "rng": rng,
-                    }
-                    seasonal_result = pool.apply(_sample_component, (seasonal_task,))
-                    params_list[cn] = seasonal_result["param"]
-                    beta_mat[:, ik] = seasonal_result["beta"]
-                    error_mat[:, ik] = seasonal_result["error"]
+                    tasks.append(
+                        {
+                            "kind": "Seasonal",
+                            "index": ik,
+                            "data": y - snapshot_sum + snapshot_beta[:, ik],
+                            "param": params_list[cn],
+                            "obserror": obserror,
+                            "evol_error": evol_error,
+                            "k": k,
+                            "rng": child_rngs[ik],
+                        }
+                    )
 
-                trend_task = {
-                    "kind": "Trend",
-                    "data": y - (beta_mat.sum(axis=1) - beta_mat[:, col_trend]),
-                    "param": tParam,
-                    "obserror": obserror,
-                    "evol_error": evol_error,
-                    "D": D,
-                    "sparse": sparse,
-                    "rng": rng,
-                }
-                trend_result = pool.apply(_sample_component, (trend_task,))
-                tParam = trend_result["param"]
+                for task_result, task_spec in zip(
+                    thread_pool.map(_sample_component, tasks), tasks
+                ):
+                    cn = task_spec["param"]["colname"]
+                    ik = task_spec["index"]
+                    params_list[cn] = task_result["param"]
+                    beta_mat[:, ik] = task_result["beta"]
+                    error_mat[:, ik] = task_result["error"]
+
+                mask = np.ones(n_beta_cols, dtype=bool)
+                mask[col_trend] = False
+                tParam_data = y - beta_mat[:, mask].sum(axis=1)
+                tParam = fit_Tbeta(
+                    tParam_data, tParam, obserror, evol_error, D, sparse, rng=rng
+                )
                 params_list["Trend"] = tParam
-                beta_mat[:, col_trend] = trend_result["beta"]
-                error_mat[:, col_trend] = trend_result["error"]
+                beta_mat[:, col_trend] = tParam["s_mu"]
+                error_mat[:, col_trend] = np.concatenate(
+                    [
+                        tParam["s_evolParams0"]["sigma_w0"] ** 2,
+                        tParam["s_evolParams"]["sigma_wt"] ** 2,
+                    ]
+                )
 
                 if Outlier:
-                    outlier_task = {
-                        "kind": "Outlier",
-                        "data": y - (beta_mat.sum(axis=1) - beta_mat[:, col_out_b]),
-                        "param": zParam,
-                        "obserror": obserror,
-                        "rng": rng,
-                    }
-                    outlier_result = pool.apply(_sample_component, (outlier_task,))
-                    zParam = outlier_result["param"]
+                    mask = np.ones(n_beta_cols, dtype=bool)
+                    mask[col_out_b] = False
+                    resid = y - beta_mat[:, mask].sum(axis=1)
+
+                    zParam = fit_Outlier(resid, zParam, obserror, rng=rng)
                     params_list["Outlier"] = zParam
-                    beta_mat[:, col_out_b] = outlier_result["beta"]
+                    beta_mat[:, col_out_b] = zParam["s_mu"]
                     if err_out_col is not None:
-                        error_mat[4:, err_out_col] = outlier_result["error"]
+                        error_mat[4:, err_out_col] = (
+                            zParam["s_evolParams"]["sigma_wt"] ** 2
+                        )
 
             # ── Save MCMC samples ──
             if nsi >= nburn:
@@ -530,9 +534,9 @@ def fit_ASD_SV(
                     isave += 1
                     skipcount = 0
     finally:
-        if pool is not None:
-            pool.close()
-            pool.join()
+        if thread_pool is not None:
+            thread_pool.close()
+            thread_pool.join()
 
     # ── Post-process: undo standardization ──
     metadata = {

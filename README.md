@@ -111,8 +111,8 @@ moments = fit_ASD_SV(
 ```
 
 - `parallel=True` keeps the observation-error update first and preserves the
-  Gibbs block order while dispatching component updates through the sampler's
-  worker pool.
+  Gibbs block order while parallelizing the seasonal feature-stream updates
+  through the sampler's worker pool.
 - `rao_blackwell=True` returns `moments` and `streaming_stats` instead of full
   posterior samples, which substantially reduces memory use for large `nsave`.
 
