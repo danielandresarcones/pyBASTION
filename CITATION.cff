@@ -1,18 +1,16 @@
-cff-version: 1.2.0
+cff-version: 1.3.0
 message: "If you use this software, please cite it as below."
 title: "pyBASTION"
 type: software
 authors:
-  - family-names: Cho
-    given-names: Jason B.
-    email: bc454@cornell.edu
-  - family-names: Matteson
-    given-names: David S.
+  - family-names: Andrés Arcones
+    given-names: Daniel
+    email: daniel.andres-arcones@bam.de
 version: 0.1.0
-date-released: "2025-01-01"
+date-released: "2026-03-31"
 license: MIT
-url: "https://github.com/jasonbcho/pybastion"
-repository-code: "https://github.com/jasonbcho/pybastion"
+url: "https://github.com/danielandresarcones/pybastion"
+repository-code: "https://github.com/danielandresarcones/pybastion"
 keywords:
   - time-series
   - decomposition
