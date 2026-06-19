@@ -20,15 +20,15 @@ keywords:
   - outlier-detection
   - mcmc
 references:
-  type: article
-  title: "BASTION: Bayesian Adaptive Seasonality and Trend Decomposition Incorporating Outliers and Noise"
-  authors:
-    - family-names: Cho
-      given-names: Jason B.
-    - family-names: Matteson
-      given-names: David S.
-  year: 2025
-  identifiers:
-    - type: other
-      value: "arXiv:2601.18052"
-      description: "arXiv preprint"
+  - type: article
+    title: "BASTION: Bayesian Adaptive Seasonality and Trend Decomposition Incorporating Outliers and Noise"
+    authors:
+      - family-names: Cho
+        given-names: Jason B.
+      - family-names: Matteson
+        given-names: David S.
+    year: 2025
+    identifiers:
+      - type: other
+        value: "arXiv:2601.18052"
+        description: "arXiv preprint"
