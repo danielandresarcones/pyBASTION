@@ -19,7 +19,7 @@ keywords:
   - trend
   - outlier-detection
   - mcmc
-preferred-citation:
+references:
   type: article
   title: "BASTION: Bayesian Adaptive Seasonality and Trend Decomposition Incorporating Outliers and Noise"
   authors:
