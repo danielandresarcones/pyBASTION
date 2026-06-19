@@ -1,5 +1,5 @@
 cff-version: 1.3.0
-message: "If you use this software, please cite the original paper as below."
+message: "If you use this software, please cite it as below and add the original paper."
 title: "pyBASTION"
 type: software
 authors:
